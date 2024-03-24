@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "Preferences.h"
 
 #include "variables.h"
 #include "defines.h"
@@ -6,7 +7,7 @@
 #include "networkFunctions.h"
 #include "displayObject.h"
 
-
+//Task handles
 TaskHandle_t TaskDisp;
 TaskHandle_t TaskSens;
 TaskHandle_t TaskFlight;
@@ -18,10 +19,16 @@ PlanesObject displayPlanes;
 //Display object
 DisplayObject display;
 
+//Setup the preferences object
+Preferences preferences;
+
 float locationVariable[7] = {areaMaxLat, areaMinLat, areaMaxLon, areaMinLon, myLat, myLon, myAlt};
 
 const char* ntpServer = "pool.ntp.org";
 long offsetTime = 0; //Variable to keep track of millisecond time
+
+//--------------------DISPLAY TASK--------------------
+// Task function for the display
 
 //Display task function. Handles current plane locatiton and handles the display
 void TaskDispCode( void * pvParameters ){
@@ -36,7 +43,11 @@ void TaskDispCode( void * pvParameters ){
   } 
 }
 
+//--------------------SENSORS TASK--------------------
+// Task function for the sensors and for the webserver
+
 //Handles the inputs and outputs of the system: compass, buttons, buzzer, battery etc.
+//In addition handles the webserver that can be used to change the settings of the system
 void TaskSensCode( void * pvParameters ){
   Serial.print("TaskDisp running on core ");
   Serial.println(xPortGetCoreID());
@@ -46,6 +57,9 @@ void TaskSensCode( void * pvParameters ){
     delay(2000);
   } 
 }
+
+//--------------------FLIGHT TASK--------------------
+// Task function for the flight
 
 //Flight task function. Handles the network and retieval of the flight information
 void TaskFlightCode( void * pvParameters ){
@@ -83,6 +97,36 @@ void TaskFlightCode( void * pvParameters ){
 
 void setup() {
   Serial.begin(115200);
+  Serial.println("Start");
+
+  //Load the preferences and check if preferences already are present
+  preferences.begin("flightradar", false);
+
+  if (preferences.getBool("Saved", false) == false){ //If no preferences are saved, save the default preferences
+    preferences.putFloat("areaMaxLat", areaMaxLat);
+    preferences.putFloat("areaMinLat", areaMinLat);
+    preferences.putFloat("areaMaxLon", areaMaxLon);
+    preferences.putFloat("areaMinLon", areaMinLon);
+    preferences.putFloat("myLat", myLat);
+    preferences.putFloat("myLon", myLon);
+    preferences.putFloat("myAlt", myAlt);
+    preferences.putString("ssid", ssid);
+    preferences.putString("password", password);
+    preferences.putBool("Saved", true);
+
+  } else { //Preferences have been saved, load them
+    areaMaxLat = preferences.getFloat("areaMaxLat", areaMaxLat);
+    areaMinLat = preferences.getFloat("areaMinLat", areaMinLat);
+    areaMaxLon = preferences.getFloat("areaMaxLon", areaMaxLon);
+    areaMinLon = preferences.getFloat("areaMinLon", areaMinLon);
+    myLat = preferences.getFloat("myLat", myLat);
+    myLon = preferences.getFloat("myLon", myLon);
+    myAlt = preferences.getFloat("myAlt", myAlt);
+    ssid = preferences.getString("ssid", ssid).c_str();
+    password = preferences.getString("password", password).c_str();
+  }
+
+  //
   startNetworkConnection(ssid, password);
   configTime(0, 0, ntpServer);
   Serial.println("Netwerk gedaan");
