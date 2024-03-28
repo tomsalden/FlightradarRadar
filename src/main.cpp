@@ -122,14 +122,19 @@ void setup() {
     myLat = preferences.getFloat("myLat", myLat);
     myLon = preferences.getFloat("myLon", myLon);
     myAlt = preferences.getFloat("myAlt", myAlt);
-    ssid = preferences.getString("ssid", ssid).c_str();
-    password = preferences.getString("password", password).c_str();
+    ssid = preferences.getString("ssid", ssid);
+    password = preferences.getString("password", password);
   }
 
+  preferences.end();
+
   //
-  startNetworkConnection(ssid, password);
+  startNetworkConnection(ssid.c_str(), password.c_str());
   configTime(0, 0, ntpServer);
   Serial.println("Netwerk gedaan");
+
+  //Start webserver
+  setupWebServer();
 
   //Initialize the display and the planes
   selectedPlanes.init(myLat, myLon);

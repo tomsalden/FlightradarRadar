@@ -9,4 +9,6 @@ unsigned long getTimeOffset();
 int networkRequestStream(float * locationSettings, PlanesObject * selectedPlanes, String importantCallsigns[], String importantPlaneModels[]);
 bool planeFilter(String planeCallsign, String planeModel, String importantCallsigns[], String importantPlaneModels[]);
 
+void setupWebServer();
+
 #endif

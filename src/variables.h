@@ -4,8 +4,8 @@
 //#############   Variables       #############
 
 //Wifi settings
-const char* ssid = "wifi_ssid";
-const char* password = "wifi_password";
+String ssid = "wifi_ssid";
+String password = "wifi_password";
 
 
 // Coordinates
@@ -43,4 +43,7 @@ String importantPlaneModels[] = {"13",
                                 "A124","EUFI","C130","H47",
                                 "F35","K35R","HAWK","P8",
                                 "C5M"};
+
+//variable to check if parameters are updated
+bool parametersUpdated = false;
 #endif
