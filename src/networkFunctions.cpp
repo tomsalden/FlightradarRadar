@@ -2,12 +2,12 @@
 #include <HTTPClient.h>
 #include <ESPAsyncWebServer.h>
 
-#include "Preferences.h"
+#include "parameterObject.h"
 #include "defines.h"
 #include "planesObject.h"
 
 AsyncWebServer server(80);
-Preferences networkPreferences;
+// Preferences networkPreferences;
 
 // Function to start the network connection with as parameters the ssid and password
 void startNetworkConnection(const char* ssid, const char* password){
@@ -191,19 +191,18 @@ int networkRequestStream(float * locationSettings, PlanesObject * selectedPlanes
   return httpResponseCode;
 }
 
-
-void setupWebServer(){
-  networkPreferences.begin("flightradar", false);
+void setupWebServer(ParameterObject * networkPreferences){
+  // networkPreferences.begin("flightradar", false);
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     // Redirect to the variables page
     request->redirect("/variables");
   });
 
-    server.on("/variables", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/variables", HTTP_GET, [networkPreferences](AsyncWebServerRequest *request) {
     String variablesPage = "<html><body>";
     variablesPage += "<h1>Wifi information</h1>";
-    variablesPage += "<p>SSID: " + networkPreferences.getString("ssid", "") + "</p>";
-    variablesPage += "<p>Password: " + networkPreferences.getString("password", "") + "</p>";
+    variablesPage += "<p>SSID: " + networkPreferences->getString("ssid", "") + "</p>";
+    variablesPage += "<p>Password: " + networkPreferences->getString("password", "") + "</p>";
     //Add form to change SSID
     variablesPage += "<h2>Change SSID</h2>";
     variablesPage += "<form action='/changewifi' method='post'>";
@@ -220,28 +219,30 @@ void setupWebServer(){
 
     //Add form to change current latitute and longitude
     variablesPage += "<h1>Current location</h1>";
-    variablesPage += "<p>Current latitude: " + String(networkPreferences.getFloat("myLat", 0),6) + "</p>";
-    variablesPage += "<p>Current longitude: " + String(networkPreferences.getFloat("myLon", 0),6) + "</p>";
+    variablesPage += "<p>Current latitude: " + String(networkPreferences->getFloat("myLat", 0),6) + "</p>";
+    variablesPage += "<p>Current longitude: " + String(networkPreferences->getFloat("myLon", 0),6) + "</p>";
     variablesPage += "<h2>Change current location</h2>";
     variablesPage += "<form action='/changelocation' method='post'>";
     variablesPage += "Latitude: <input type='text' name='latitude'><br>";
     variablesPage += "<input type='submit' value='Change'></form>";
+
+    variablesPage += "<form action='/changelocation' method='post'>";
     variablesPage += "Longitude: <input type='text' name='longitude'><br>";
     variablesPage += "<input type='submit' value='Change'></form>";
 
     //Add small map of the current location with a marker
     variablesPage += "<h2>Current location</h2>";
-    variablesPage += "<iframe src='https://maps.google.com/maps?q=" + String(networkPreferences.getFloat("myLat", 0),6) + "," + String(networkPreferences.getFloat("myLon", 0),6) + "&z=15&output=embed' width='600' height='450' frameborder='0' style='border:0' allowfullscreen></iframe>";
+    variablesPage += "<iframe src='https://maps.google.com/maps?q=" + String(networkPreferences->getFloat("myLat", 0),6) + "," + String(networkPreferences->getFloat("myLon", 0),6) + "&z=15&output=embed' width='600' height='450' frameborder='0' style='border:0' allowfullscreen></iframe>";
 
     variablesPage += "<h1>Variables</h1>";
     variablesPage += "<table border='1'><tr><th>Variable</th><th>Action</th></tr>";
 
     // Retrieve the number of variables
-    int numVariables = networkPreferences.getInt("num_variables", 0);
+    int numVariables = networkPreferences->getInt("num_variables", 0);
 
     for (int i = 1; i <= numVariables; i++) {
       // Retrieve variable value from EEPROM
-      String variable = networkPreferences.getString(("cs-" + String(i)).c_str(), "");
+      String variable = networkPreferences->getString(("cs-" + String(i)).c_str(), "");
 
       // Display variable in a table row with remove button
       variablesPage += "<tr><td>" + variable + "</td>";
@@ -261,44 +262,44 @@ void setupWebServer(){
     request->send(200, "text/html", variablesPage);
   });
 
-  server.on("/add", HTTP_POST, [](AsyncWebServerRequest *request) {
+  server.on("/add", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
     // Retrieve variable from form data
     if (request->hasParam("variable", true)) {
       AsyncWebParameter* p = request->getParam("variable", true);
       String variable = p->value();
 
       // Save variable to EEPROM
-      int numVariables = networkPreferences.getInt("num_variables", 0);
+      int numVariables = networkPreferences->getInt("num_variables", 0);
       numVariables++;
-      networkPreferences.putString(("cs-" + String(numVariables)).c_str(), variable);
-      networkPreferences.putInt("num_variables", numVariables);
+      networkPreferences->putString(("cs-" + String(numVariables)).c_str(), variable);
+      networkPreferences->putInt("num_variables", numVariables);
     }
 
     // Redirect back to variables page
     request->redirect("/variables");
   });
 
-  server.on("/remove", HTTP_POST, [](AsyncWebServerRequest *request) {
+  server.on("/remove", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
     // Retrieve variable ID from form data
     if (request->hasParam("id", true)) {
       AsyncWebParameter* p = request->getParam("id", true);
       int id = p->value().toInt();
 
       // Remove variable from EEPROM
-      networkPreferences.remove(("cs-" + String(id)).c_str());
+      networkPreferences->remove(("cs-" + String(id)).c_str());
 
       //Reorder the variables in EEPROM to prevent gaps
-      for (int i = id; i <= networkPreferences.getInt("num_variables", 0)-1; i++) {
-        String variable = networkPreferences.getString(("cs-" + String(i + 1)).c_str(), "");
-        networkPreferences.putString(("cs-" + String(i)).c_str(), variable);
-        networkPreferences.remove(("cs-" + String(i + 1)).c_str());
+      for (int i = id; i <= networkPreferences->getInt("num_variables", 0)-1; i++) {
+        String variable = networkPreferences->getString(("cs-" + String(i + 1)).c_str(), "");
+        networkPreferences->putString(("cs-" + String(i)).c_str(), variable);
+        networkPreferences->remove(("cs-" + String(i + 1)).c_str());
       }
 
       // Update number of variables
-      int numVariables = networkPreferences.getInt("num_variables", 0);
+      int numVariables = networkPreferences->getInt("num_variables", 0);
       if (numVariables > 0) {
         numVariables--;
-        networkPreferences.putInt("num_variables", numVariables);
+        networkPreferences->putInt("num_variables", numVariables);
       }
     }
 
@@ -306,7 +307,7 @@ void setupWebServer(){
     request->redirect("/variables");
   });
 
-  server.on("/changewifi", HTTP_POST, [](AsyncWebServerRequest *request) {
+  server.on("/changewifi", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
     // Retrieve variable from form data
     if (request->hasParam("ssid", true)) {
       AsyncWebParameter* p = request->getParam("ssid", true);
@@ -314,7 +315,7 @@ void setupWebServer(){
 
       // Save SSID to EEPROM
       Serial.println("Changing SSID to: " + variable);
-      networkPreferences.putString("ssid", variable);
+      networkPreferences->putString("ssid", variable);
     }
 
     if (request->hasParam("password", true)) {
@@ -323,21 +324,21 @@ void setupWebServer(){
 
       // Save SSID to EEPROM
       Serial.println("Changing Password to: " + variable);
-      networkPreferences.putString("password", variable);
+      networkPreferences->putString("password", variable);
     }
 
     // Redirect back to variables page
     request->redirect("/variables");
   });
 
-  server.on("/changelocation", HTTP_POST, [](AsyncWebServerRequest *request) {
+  server.on("/changelocation", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
     // Retrieve variable from form data
     if (request->hasParam("latitude", true)) {
       AsyncWebParameter* p = request->getParam("latitude", true);
       String variable = p->value();
 
       // Save SSID to EEPROM
-      networkPreferences.putString("myLat", variable);
+      networkPreferences->putFloat("myLat", variable.toFloat());
     }
 
     if (request->hasParam("longitude", true)) {
@@ -345,7 +346,7 @@ void setupWebServer(){
       String variable = p->value();
 
       // Save SSID to EEPROM
-      networkPreferences.putString("myLon", variable);
+      networkPreferences->putFloat("myLon", variable.toFloat());
     }
 
     // Redirect back to variables page
@@ -354,3 +355,4 @@ void setupWebServer(){
 
   server.begin();
 }
+

@@ -2,6 +2,12 @@
 #include "NotoSansBold36.h"
 #include "Latin_Hiragana_24.h"
 #include "PlaneCompass.h"
+#include "plane1.h"
+#include "plane2.h"
+#include "plane3.h"
+#include "plane4.h"
+#include "plane5.h"
+#include "plane6.h"
 
 // Functions for the display object
 void DisplayObject::init() {
@@ -19,6 +25,10 @@ void DisplayObject::init() {
     planeCompass.createSprite(70,70);
     radar.createSprite(70,70);
     radarStripe.createSprite(4,70);
+    planeIcon.createSprite(88,88);
+    planeIcon.setSwapBytes(true);
+
+    planeIcon.pushImage(0,0,88,88,Plane6);
 
     planeCompass.pushImage(0,0,70,70,PlaneCompass);
     planeCompass.setPivot(35,35);
@@ -140,6 +150,7 @@ void DisplayObject::updateDisplay(PlanesObject * displayPlanes, int selectedPlan
     table.pushToSprite(&background,0,0,transparentColour);
     planeCompassBase.pushToSprite(&background,448,7,transparentColour);
     radar.pushToSprite(&background,448,85,transparentColour);
+    planeIcon.pushToSprite(&background,450,161);
     // radarStripe.pushToSprite(&background,481,120,transparentColour);
 
     // Push the LCD colours
