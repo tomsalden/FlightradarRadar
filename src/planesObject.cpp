@@ -87,14 +87,30 @@ int PlanesObject::calculateDistance(float myLat, float myLon, float planeLat, fl
 
 void PlanesObject::sortPlanes() {
     // Save the correct order of the planes based on distance in the sortedPlaneArray
-    // Update the sortedPlaneArray
+    // Update the sortedPlaneArray based on the altitude angle from the user
     
-    // First copy the distance to a temp array
+    //Convert my coordinates to radians
+    float myLatRad = PlanesObject::myLat * PI / 180;
+    float myLonRad = PlanesObject::myLon * PI / 180;
+    
+    // First calculate the altitude angle to a temp array
     int tempArray[planeArraySize];
     Serial.print("Distance array:");
     for (int i = 0; i < planeArraySize; i++) {
-        tempArray[i] = PlanesObject::planeDistance[i];
-        Serial.print(String(PlanesObject::planeDistance[i]) + " ");
+        // Calculate the altitude angle
+        float planeLatRad = PlanesObject::planeLat[i] * PI / 180;
+        float planeLonRad = PlanesObject::planeLon[i] * PI / 180;
+
+        float a = sin((planeLatRad-myLatRad)/2)*sin((planeLatRad-myLatRad)/2) + cos(myLatRad)*cos(planeLatRad)*sin((planeLonRad-myLonRad)/2)*sin((planeLonRad-myLonRad)/2);
+        float c = 2*atan2(sqrt(a), sqrt(1-a));
+        float distance = 6371 * c;
+
+        float altitudeAngle = atan2(PlanesObject::planeAltitude[i] - PlanesObject::myAlt, distance) * 180 / PI;
+
+        tempArray[i] = altitudeAngle;
+        Serial.println(PlanesObject::planeName[i]);
+        Serial.println(String(PlanesObject::planeDistance[i]) + " ");
+        Serial.println(String(altitudeAngle) + " ");
     }
     Serial.println();
 
@@ -104,8 +120,11 @@ void PlanesObject::sortPlanes() {
         pairArray[i] = std::make_pair(tempArray[i], i);
     }
 
-    // Sort the pair array based on the distance
-    std::sort(pairArray, pairArray + planeArraySize);
+    //Sort the pair array from largest to smallest
+    std::sort(pairArray, pairArray + planeArraySize, std::greater<std::pair<int, int>>());
+
+    // // Sort the pair array based on the distance
+    // std::sort(pairArray, pairArray + planeArraySize);
 
     // Copy the sorted array to the sortedPlaneArray
     for (int i = 0; i < planeArraySize; i++) {

@@ -31,6 +31,7 @@ public:
     // Variables for calculations
     float myLat;
     float myLon;
+    float myAlt;
     int planeCount = 0;
     bool planeArrayFull = false;
     bool planeArrayLocked = false;
