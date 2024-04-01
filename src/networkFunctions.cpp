@@ -63,15 +63,14 @@ unsigned long getTimeOffset() {
   return unixTime - millis();
 }
 
-bool planeFilter(String planeCallsign, String planeModel, String importantCallsigns[], String importantPlaneModels[]){
+bool planeFilter(String planeCallsign, String planeModel, ParameterObject * filterParameters){
   //Filter planes based on callsign
   //First remove the " from the planeCallsign start and end, then check if the importantCallsigns array contains a substring of the planeCallsign
-  int size = importantCallsigns[0].toInt(); //33;
+  // int size = importantCallsigns[0].toInt(); //33;
 
-  for (int i = 1; i < size; i++){
+  for (int i = 0; i < filterParameters->importantCallsignsSize; i++){
     // Serial.println(importantCallsigns[i] + " " + planeCallsign + " " + String(i));
-    if (planeCallsign.indexOf(importantCallsigns[i]) != -1){
-      
+    if (planeCallsign.indexOf(filterParameters->importantCallsigns[i]) != -1){
       return true;
     }
   }
@@ -83,10 +82,10 @@ bool planeFilter(String planeCallsign, String planeModel, String importantCallsi
   int tempLength = planeModel.length();
   planeModel.remove(tempLength-1,1);
 
-  size = 13;
+  // size = 13;
 
-  for (int i = 1; i < size; i++){
-    if (planeModel == importantPlaneModels[i]){
+  for (int i = 0; i < filterParameters->importantPlaneModelsSize; i++){
+    if (planeModel == filterParameters->importantPlaneModels[i]){
       return true;
     }
   }
@@ -94,7 +93,7 @@ bool planeFilter(String planeCallsign, String planeModel, String importantCallsi
 }
 
 
-int networkRequestStream(float * locationSettings, PlanesObject * selectedPlanes, String importantCallsigns[], String importantPlaneModels[]){
+int networkRequestStream(float * locationSettings, PlanesObject * selectedPlanes, ParameterObject * requestParameters){
   String url = "https://data-cloud.flightradar24.com/zones/fcgi/feed.js?bounds=" + String(locationSettings[0],4) + "," + String(locationSettings[1],4) + "," + String(locationSettings[3],4) + "," + String(locationSettings[2],4) + "&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=0&air=1&vehicles=0&estimated=1&maxage=14400&gliders=0&stats=0";
   WiFiClient client;
   HTTPClient http;
@@ -167,7 +166,7 @@ int networkRequestStream(float * locationSettings, PlanesObject * selectedPlanes
 
       // test = dataStream->readString();
       // if (planeType == "\"B763\""){
-      if (planeFilter(planeName, planeType, importantCallsigns, importantPlaneModels) == true){
+      if (planeFilter(planeName, planeType, requestParameters) == true){
         Serial.println("Identifier: " + planeIdentifier);
         if (selectedPlanes->planeArrayFull == false){
           // Serial.println("Identifier: " + planeIdentifier + "Timestamp: " + planeTimestamp + " Plane: " + planeRegistration + " Type: " + planeType + " Name: " + planeName + " Lat: " + planeLat + " Lon: " + planeLon + " Alt: " + planeAltitude + " Heading: " + planeHeading + " Speed: " + planeSpeed);
@@ -234,52 +233,101 @@ void setupWebServer(ParameterObject * networkPreferences){
     variablesPage += "<h2>Current location</h2>";
     variablesPage += "<iframe src='https://maps.google.com/maps?q=" + String(networkPreferences->getFloat("myLat", 0),6) + "," + String(networkPreferences->getFloat("myLon", 0),6) + "&z=15&output=embed' width='600' height='450' frameborder='0' style='border:0' allowfullscreen></iframe>";
 
-    variablesPage += "<h1>Variables</h1>";
-    variablesPage += "<table border='1'><tr><th>Variable</th><th>Action</th></tr>";
+
+    // Add section to add important callsigns
+    variablesPage += "<h1>Callsigns</h1>";
+    variablesPage += "<table border='1'><tr><th>Callsign</th><th>Action</th></tr>";
 
     // Retrieve the number of variables
-    int numVariables = networkPreferences->getInt("num_variables", 0);
+    int numVariablesCallsign = networkPreferences->getInt("num_cs", 0);
 
-    for (int i = 1; i <= numVariables; i++) {
+    for (int i = 1; i <= numVariablesCallsign; i++) {
       // Retrieve variable value from EEPROM
       String variable = networkPreferences->getString(("cs-" + String(i)).c_str(), "");
 
       // Display variable in a table row with remove button
       variablesPage += "<tr><td>" + variable + "</td>";
-      variablesPage += "<td><form action='/remove' method='post'><input type='hidden' name='id' value='" + String(i) + "'><input type='submit' value='Remove'></form></td></tr>";
+      variablesPage += "<td><form action='/removecs' method='post'><input type='hidden' name='id' value='" + String(i) + "'><input type='submit' value='Remove'></form></td></tr>";
     }
 
     variablesPage += "</table>";
 
     // Add form to add new variable
-    variablesPage += "<h2>Add Variable</h2>";
-    variablesPage += "<form action='/add' method='post'>";
-    variablesPage += "Variable: <input type='text' name='variable'><br>";
+    variablesPage += "<h2>Add Callsign</h2>";
+    variablesPage += "<form action='/addcs' method='post'>";
+    variablesPage += "(Part of) callsign: <input type='text' name='variable'><br>";
     variablesPage += "<input type='submit' value='Add'></form>";
+
+
+    //Add section to add important plane models
+    variablesPage += "<h1>Plane models</h1>";
+    variablesPage += "<table border='1'><tr><th>Plane model</th><th>Action</th></tr>";
+
+    // Retrieve the number of variables
+    int numVariablesModels = networkPreferences->getInt("num_pm", 0);
+
+    for (int i = 1; i <= numVariablesModels; i++) {
+      // Retrieve variable value from EEPROM
+      String variable = networkPreferences->getString(("pm-" + String(i)).c_str(), "");
+
+      // Display variable in a table row with remove button
+      variablesPage += "<tr><td>" + variable + "</td>";
+      variablesPage += "<td><form action='/removepm' method='post'><input type='hidden' name='id' value='" + String(i) + "'><input type='submit' value='Remove'></form></td></tr>";
+    }
+
+    variablesPage += "</table>";
+
+    // Add form to add new variable
+    variablesPage += "<h2>Add Plane model</h2>";
+    variablesPage += "<form action='/addpm' method='post'>";
+    variablesPage += "Plane model: <input type='text' name='variable'><br>";
+    variablesPage += "<input type='submit' value='Add'></form>";
+
 
     variablesPage += "</body></html>";
 
     request->send(200, "text/html", variablesPage);
   });
 
-  server.on("/add", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
+  server.on("/addcs", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
     // Retrieve variable from form data
     if (request->hasParam("variable", true)) {
       AsyncWebParameter* p = request->getParam("variable", true);
       String variable = p->value();
 
       // Save variable to EEPROM
-      int numVariables = networkPreferences->getInt("num_variables", 0);
+      int numVariables = networkPreferences->getInt("num_cs", 0);
       numVariables++;
       networkPreferences->putString(("cs-" + String(numVariables)).c_str(), variable);
-      networkPreferences->putInt("num_variables", numVariables);
+      networkPreferences->putInt("num_cs", numVariables);
     }
+    // Reload the parameters
+    networkPreferences->reloadParameters();
+    // Redirect back to variables page
+    request->redirect("/variables");
+  });
+
+  server.on("/addpm", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
+    // Retrieve variable from form data
+    if (request->hasParam("variable", true)) {
+      AsyncWebParameter* p = request->getParam("variable", true);
+      String variable = p->value();
+
+      // Save variable to EEPROM
+      int numVariables = networkPreferences->getInt("num_pm", 0);
+      numVariables++;
+      networkPreferences->putString(("pm-" + String(numVariables)).c_str(), variable);
+      networkPreferences->putInt("num_pm", numVariables);
+    }
+
+    // Reload the parameters
+    networkPreferences->reloadParameters();
 
     // Redirect back to variables page
     request->redirect("/variables");
   });
 
-  server.on("/remove", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
+  server.on("/removecs", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
     // Retrieve variable ID from form data
     if (request->hasParam("id", true)) {
       AsyncWebParameter* p = request->getParam("id", true);
@@ -289,19 +337,53 @@ void setupWebServer(ParameterObject * networkPreferences){
       networkPreferences->remove(("cs-" + String(id)).c_str());
 
       //Reorder the variables in EEPROM to prevent gaps
-      for (int i = id; i <= networkPreferences->getInt("num_variables", 0)-1; i++) {
+      for (int i = id; i <= networkPreferences->getInt("num_cs", 0)-1; i++) {
         String variable = networkPreferences->getString(("cs-" + String(i + 1)).c_str(), "");
         networkPreferences->putString(("cs-" + String(i)).c_str(), variable);
         networkPreferences->remove(("cs-" + String(i + 1)).c_str());
       }
 
       // Update number of variables
-      int numVariables = networkPreferences->getInt("num_variables", 0);
+      int numVariables = networkPreferences->getInt("num_cs", 0);
       if (numVariables > 0) {
         numVariables--;
-        networkPreferences->putInt("num_variables", numVariables);
+        networkPreferences->putInt("num_cs", numVariables);
       }
     }
+
+    // Reload the parameters
+    networkPreferences->reloadParameters();
+
+    // Redirect back to variables page
+    request->redirect("/variables");
+  });
+
+  server.on("/removepm", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
+    // Retrieve variable ID from form data
+    if (request->hasParam("id", true)) {
+      AsyncWebParameter* p = request->getParam("id", true);
+      int id = p->value().toInt();
+
+      // Remove variable from EEPROM
+      networkPreferences->remove(("pm-" + String(id)).c_str());
+
+      //Reorder the variables in EEPROM to prevent gaps
+      for (int i = id; i <= networkPreferences->getInt("num_pm", 0)-1; i++) {
+        String variable = networkPreferences->getString(("pm-" + String(i + 1)).c_str(), "");
+        networkPreferences->putString(("pm-" + String(i)).c_str(), variable);
+        networkPreferences->remove(("pm-" + String(i + 1)).c_str());
+      }
+
+      // Update number of variables
+      int numVariables = networkPreferences->getInt("num_pm", 0);
+      if (numVariables > 0) {
+        numVariables--;
+        networkPreferences->putInt("num_pm", numVariables);
+      }
+    }
+
+    // Reload the parameters
+    networkPreferences->reloadParameters();
 
     // Redirect back to variables page
     request->redirect("/variables");
@@ -348,6 +430,9 @@ void setupWebServer(ParameterObject * networkPreferences){
       // Save SSID to EEPROM
       networkPreferences->putFloat("myLon", variable.toFloat());
     }
+
+    // Reload the parameters
+    networkPreferences->reloadParameters();
 
     // Redirect back to variables page
     request->redirect("/variables");

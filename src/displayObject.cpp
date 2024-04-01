@@ -49,6 +49,28 @@ void DisplayObject::updateDisplay(PlanesObject * displayPlanes, int selectedPlan
     int secondsToClosestDistance = int(timeToClosestDistance) % 60;
 
     anglePlane = calculateAngle(displayPlanes->myLat, displayPlanes->myLon, newLat, newLon);
+
+    //Calculate if the time is increasing or decreasing
+    int directionsum = 0;
+    if (timeToClosestDistance != previousTime){
+        if (timeToClosestDistance > previousTime){
+            timeArray[timeArrayIndex] = 1;
+        } else if (timeToClosestDistance < previousTime){
+            timeArray[timeArrayIndex] = -1;
+        } else {
+            timeArray[timeArrayIndex] = 0;
+        }
+
+        //Calculate the average of the last 5 times
+        for (int i = 0; i < 5; i++){
+            directionsum += timeArray[i];
+        }
+
+        //Update the previous time and the time array index
+        previousTime = timeToClosestDistance;
+        timeArrayIndex = (timeArrayIndex + 1) % 5;
+    }
+
     
     if (displayPlanes->planeDistance[selectedPlane] == 99999){
         newDistance = 0;
@@ -121,8 +143,24 @@ void DisplayObject::updateDisplay(PlanesObject * displayPlanes, int selectedPlan
     table.drawString("C.Dist: ", 248, 118);
     table.drawString(String(closestDistance,1), 330, 118);
 
+    // Set textcolor to green if the plane is moving towards the user. Else set the text to dark blue
+    if (directionsum < 0){
+        table.setTextColor(TFT_GREEN);
+    } else {
+        table.setTextColor(TFT_DARKCYAN);
+    }
+
     table.drawString("T.Dist: ", 248, 168);
+    if (minutesToClosestDistance > 9){
+    table.drawString(String(minutesToClosestDistance) + "m", 330, 168);
+    }
+    else if (minutesToClosestDistance == 0){
+    table.drawString(String(secondsToClosestDistance) + " s", 330, 168);
+    }
+    else {
     table.drawString(String(minutesToClosestDistance) + "m, " + String(secondsToClosestDistance) + " s", 330, 168);
+    }
+
 
     // Unload font
     table.unloadFont();

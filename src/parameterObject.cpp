@@ -12,6 +12,38 @@ void ParameterObject::init() {
     } else { //Preferences have been saved, load them
         loadParameters();
     }
+
+    // Load the callsigns
+    importantCallsignsSize = preferences.getInt("num_cs", 0);
+    importantCallsigns.resize(importantCallsignsSize);
+    for (int i = 0; i < importantCallsignsSize; i++){
+        importantCallsigns[i] = preferences.getString(("cs-" + String(i+1)).c_str(), "");
+    }
+
+    // Load the plane models
+    importantPlaneModelsSize = preferences.getInt("num_pm", 0);
+    importantPlaneModels.resize(importantPlaneModelsSize);
+    for (int i = 0; i < importantPlaneModelsSize; i++){
+        importantPlaneModels[i] = preferences.getString(("pm-" + String(i+1)).c_str(), "");
+    }
+}
+
+void ParameterObject::reloadParameters() {
+    // Reload the parameters from the preferences object
+    // Load the callsigns
+    importantCallsignsSize = preferences.getInt("num_cs", 0);
+    importantCallsigns.resize(importantCallsignsSize);
+    for (int i = 0; i < importantCallsignsSize; i++){
+        importantCallsigns[i] = preferences.getString(("cs-" + String(i+1)).c_str(), "");
+    }
+
+    // Load the plane models
+    importantPlaneModelsSize = preferences.getInt("num_pm", 0);
+    importantPlaneModels.resize(importantPlaneModelsSize);
+    for (int i = 0; i < importantPlaneModelsSize; i++){
+        importantPlaneModels[i] = preferences.getString(("pm-" + String(i+1)).c_str(), "");
+    }
+    loadParameters();
 }
 
 void ParameterObject::saveParameters(bool defaultValues) {

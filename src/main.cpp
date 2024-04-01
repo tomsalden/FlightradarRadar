@@ -101,7 +101,7 @@ void TaskFlightCode( void * pvParameters ){
     locationVariable[5] = parameters.myLon;
     locationVariable[6] = parameters.myAlt;
 
-    Serial.println(networkRequestStream(&locationVariable[0], &selectedPlanes, importantCallsigns, importantPlaneModels));
+    Serial.println(networkRequestStream(&locationVariable[0], &selectedPlanes, &parameters));
     selectedPlanes.printClosestPlane();
 
     // Update the displayPlanes object with the selectedPlanes object
@@ -125,8 +125,10 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Start");
 
+  delay(3000);
+
   parameters.init(); //Initialize the parameters object
-  //
+
   startNetworkConnection(parameters.ssid.c_str(), parameters.password.c_str());
   configTime(0, 0, ntpServer);
   Serial.println("Netwerk gedaan");
@@ -146,7 +148,7 @@ void setup() {
                     "Display",     /* name of task. */
                     10000,       /* Stack size of task */
                     NULL,        /* parameter of the task */
-                    1,           /* priority of the task */
+                    configMAX_PRIORITIES,           /* priority of the task */
                     &TaskDisp,      /* Task handle to keep track of created task */
                     0);          /* pin task to core 0 */                  
   delay(500); 

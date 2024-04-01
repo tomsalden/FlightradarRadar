@@ -4,6 +4,7 @@
 #define parameterObject_h
 
 #include <Arduino.h>
+#include <vector>
 #include "Preferences.h"
 
 class ParameterObject {
@@ -12,6 +13,7 @@ public:
     void init();
     void saveParameters(bool defaultValues = false);
     void loadParameters();
+    void reloadParameters();
 
     void putString(const char* key, const String value){
         preferences.putString(key, value);
@@ -50,6 +52,14 @@ public:
 
     // Boolean to tell if the parameters have been updated
     bool parametersUpdated = false;
+
+    // Vector to store the callsigns
+    std::vector<String> importantCallsigns;
+    int importantCallsignsSize = 0;
+
+    // Vector to store the plane models
+    std::vector<String> importantPlaneModels;
+    int importantPlaneModelsSize = 0;
 
     // Variables for the preferences object
     Preferences preferences;
