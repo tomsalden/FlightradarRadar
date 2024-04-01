@@ -161,6 +161,13 @@ void DisplayObject::updateDisplay(PlanesObject * displayPlanes, int selectedPlan
     table.drawString(String(minutesToClosestDistance) + "m, " + String(secondsToClosestDistance) + " s", 330, 168);
     }
 
+    // Set textcolor back to blue
+    table.setTextColor(textColour);
+
+    // Selected plane and total planes in the area
+    table.setTextDatum(4); //Text middle-center
+    table.drawString(String(selectedPlaneIndex+1) + "/" + String(displayPlanes->planeCount), 390, 26);
+
 
     // Unload font
     table.unloadFont();

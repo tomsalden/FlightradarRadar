@@ -23,24 +23,16 @@ DisplayObject display;
 ParameterObject parameters;
 
 float locationVariable[7] = {parameters.areaMaxLat, parameters.areaMinLat, parameters.areaMaxLon, parameters.areaMinLon, parameters.myLat, parameters.myLon, parameters.myAlt};
+int selectedPlane = 0;
 
-String importantCallsigns[] = {"34", 
-                                "RCH","LAGR","RRR","NCHO",
-                                "MMF","NAF","NATO","RED",
-                                "HKY","QID","CFC","JAKE",
-                                "ASCOT","HOBO","BART","BLKCAT",
-                                "OMEN","BLUE","BGA","ZXP",
-                                "DGLBA","LIFE","ZXP","BAF",
-                                "CHAOS","MOOSE","WOLF","SNAKE",
-                                "CEF","NOBLE","ROGUE","SVF","TRA"
-                                };
+int button1Pin = 0;
+int button2Pin = 21;
 
-//Plane types to look out for, the last item is the amount of plane types in the array with the number of items in the array as the first item
-String importantPlaneModels[] = {"13",
-                                "C17","R135","A400","C30J",
-                                "A124","EUFI","C130","H47",
-                                "F35","K35R","HAWK","P8",
-                                "C5M"};
+int lastButtonState1 = HIGH; // the previous reading from the input pin
+int lastButtonState2 = HIGH; // the previous reading from the input pin
+unsigned long lastDebounceTime1 = 0; // the last time the output pin was toggled
+unsigned long lastDebounceTime2 = 0; // the last time the output pin was toggled
+unsigned long debounceDelay = 50; // the debounce time; increase if the output flickers
 
 const char* ntpServer = "pool.ntp.org";
 long offsetTime = 0; //Variable to keep track of millisecond time
@@ -56,7 +48,10 @@ void TaskDispCode( void * pvParameters ){
 
   for(;;){
     // Serial.println("TaskDisp!");
-    display.updateDisplay(&displayPlanes, 0, offsetTime);
+    if (selectedPlane >= displayPlanes.planeCount){
+      selectedPlane = 0;
+    }
+    display.updateDisplay(&displayPlanes, selectedPlane, offsetTime);
     delay(100);
   } 
 }
@@ -71,8 +66,50 @@ void TaskSensCode( void * pvParameters ){
   Serial.println(xPortGetCoreID());
 
   for(;;){
-    Serial.println("TaskSens!");
-    delay(2000);
+    // Serial.println("TaskSens!");
+    //Read button 1
+    int reading1 = digitalRead(button1Pin);
+
+    if (reading1 != lastButtonState1) {
+      Serial.println("Button1 pressed Noticed");
+      lastDebounceTime1 = millis();
+      selectedPlane = (selectedPlane + 1) % displayPlanes.planeCount;
+    }
+
+    if ((millis() - lastDebounceTime1) > debounceDelay) {
+      if (reading1 != lastButtonState1) {
+        lastButtonState1 = reading1;
+
+        if (reading1 == HIGH) {
+          Serial.println("Button1 pressed");
+
+        }
+      }
+    }
+
+    //Read button 2
+    int reading2 = digitalRead(button2Pin);
+    
+    if (reading2 != lastButtonState2) {
+      Serial.println("Button2 pressed Noticed");
+      lastDebounceTime2 = millis();
+      selectedPlane = (selectedPlane - 1) % displayPlanes.planeCount;
+      if (selectedPlane < 0){
+        selectedPlane = displayPlanes.planeCount - 1;
+      }
+    }
+
+    if ((millis() - lastDebounceTime2) > debounceDelay) {
+      if (reading2 != lastButtonState2) {
+        lastButtonState2 = reading2;
+
+        if (reading2 == HIGH) {
+          Serial.println("Button2 pressed");
+        }
+      }
+    }
+
+    delay(100);
   } 
 }
 
@@ -140,6 +177,10 @@ void setup() {
   selectedPlanes.init(parameters.myLat, parameters.myLon);
   displayPlanes.init(parameters.myLat, parameters.myLon);
   display.init();
+
+  //Setup button pins
+  // pinMode(button1Pin, INPUT);
+  pinMode(button2Pin, INPUT);
 
   //create a task that will be executed in the TaskDisp() function, with priority 1 and executed on core 0
   //Will manage everything related to the display (including calculating the interpolated data of the planes)

@@ -95,7 +95,7 @@ void PlanesObject::sortPlanes() {
     
     // First calculate the altitude angle to a temp array
     int tempArray[planeArraySize];
-    Serial.print("Distance array:");
+    // Serial.print("Distance array:");
     for (int i = 0; i < planeArraySize; i++) {
         // Calculate the altitude angle
         float planeLatRad = PlanesObject::planeLat[i] * PI / 180;
@@ -108,9 +108,9 @@ void PlanesObject::sortPlanes() {
         float altitudeAngle = atan2(PlanesObject::planeAltitude[i] - PlanesObject::myAlt, distance) * 180 / PI;
 
         tempArray[i] = altitudeAngle;
-        Serial.println(PlanesObject::planeName[i]);
-        Serial.println(String(PlanesObject::planeDistance[i]) + " ");
-        Serial.println(String(altitudeAngle) + " ");
+        // Serial.println(PlanesObject::planeName[i]);
+        // Serial.println(String(PlanesObject::planeDistance[i]) + " ");
+        // Serial.println(String(altitudeAngle) + " ");
     }
     Serial.println();
 
