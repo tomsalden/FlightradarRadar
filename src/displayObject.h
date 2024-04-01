@@ -32,6 +32,10 @@ private:
 
     int timeSinceUpdate(long timestamp, long offsetTime);
     int anglePlane = 0;
+
+    double previousTime = 0;
+    double timeArray[5] = {0,0,0,0,0};
+    int timeArrayIndex = 0;
     
 
     // Variables for the display object

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "Preferences.h"
 
-#include "variables.h"
+#include "parameterObject.h"
 #include "defines.h"
 #include "planesObject.h"
 #include "networkFunctions.h"
@@ -19,10 +19,28 @@ PlanesObject displayPlanes;
 //Display object
 DisplayObject display;
 
-//Setup the preferences object
-Preferences preferences;
+//Setup the parameters object
+ParameterObject parameters;
 
-float locationVariable[7] = {areaMaxLat, areaMinLat, areaMaxLon, areaMinLon, myLat, myLon, myAlt};
+float locationVariable[7] = {parameters.areaMaxLat, parameters.areaMinLat, parameters.areaMaxLon, parameters.areaMinLon, parameters.myLat, parameters.myLon, parameters.myAlt};
+
+String importantCallsigns[] = {"34", 
+                                "RCH","LAGR","RRR","NCHO",
+                                "MMF","NAF","NATO","RED",
+                                "HKY","QID","CFC","JAKE",
+                                "ASCOT","HOBO","BART","BLKCAT",
+                                "OMEN","BLUE","BGA","ZXP",
+                                "DGLBA","LIFE","ZXP","BAF",
+                                "CHAOS","MOOSE","WOLF","SNAKE",
+                                "CEF","NOBLE","ROGUE","SVF","TRA"
+                                };
+
+//Plane types to look out for, the last item is the amount of plane types in the array with the number of items in the array as the first item
+String importantPlaneModels[] = {"13",
+                                "C17","R135","A400","C30J",
+                                "A124","EUFI","C130","H47",
+                                "F35","K35R","HAWK","P8",
+                                "C5M"};
 
 const char* ntpServer = "pool.ntp.org";
 long offsetTime = 0; //Variable to keep track of millisecond time
@@ -75,7 +93,15 @@ void TaskFlightCode( void * pvParameters ){
     Serial.println(getTime());
 
     // Request plane data and store it in the selectedPlanes object
-    Serial.println(networkRequestStream(&locationVariable[0], &selectedPlanes, importantCallsigns, importantPlaneModels));
+    locationVariable[0] = parameters.areaMaxLat;
+    locationVariable[1] = parameters.areaMinLat;
+    locationVariable[2] = parameters.areaMaxLon;
+    locationVariable[3] = parameters.areaMinLon;
+    locationVariable[4] = parameters.myLat;
+    locationVariable[5] = parameters.myLon;
+    locationVariable[6] = parameters.myAlt;
+
+    Serial.println(networkRequestStream(&locationVariable[0], &selectedPlanes, &parameters));
     selectedPlanes.printClosestPlane();
 
     // Update the displayPlanes object with the selectedPlanes object
@@ -99,41 +125,20 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Start");
 
-  //Load the preferences and check if preferences already are present
-  preferences.begin("flightradar", false);
+  delay(3000);
 
-  if (preferences.getBool("Saved", false) == false){ //If no preferences are saved, save the default preferences
-    preferences.putFloat("areaMaxLat", areaMaxLat);
-    preferences.putFloat("areaMinLat", areaMinLat);
-    preferences.putFloat("areaMaxLon", areaMaxLon);
-    preferences.putFloat("areaMinLon", areaMinLon);
-    preferences.putFloat("myLat", myLat);
-    preferences.putFloat("myLon", myLon);
-    preferences.putFloat("myAlt", myAlt);
-    preferences.putString("ssid", ssid);
-    preferences.putString("password", password);
-    preferences.putBool("Saved", true);
+  parameters.init(); //Initialize the parameters object
 
-  } else { //Preferences have been saved, load them
-    areaMaxLat = preferences.getFloat("areaMaxLat", areaMaxLat);
-    areaMinLat = preferences.getFloat("areaMinLat", areaMinLat);
-    areaMaxLon = preferences.getFloat("areaMaxLon", areaMaxLon);
-    areaMinLon = preferences.getFloat("areaMinLon", areaMinLon);
-    myLat = preferences.getFloat("myLat", myLat);
-    myLon = preferences.getFloat("myLon", myLon);
-    myAlt = preferences.getFloat("myAlt", myAlt);
-    ssid = preferences.getString("ssid", ssid).c_str();
-    password = preferences.getString("password", password).c_str();
-  }
-
-  //
-  startNetworkConnection(ssid, password);
+  startNetworkConnection(parameters.ssid.c_str(), parameters.password.c_str());
   configTime(0, 0, ntpServer);
   Serial.println("Netwerk gedaan");
 
+  //Start webserver
+  setupWebServer(&parameters);
+
   //Initialize the display and the planes
-  selectedPlanes.init(myLat, myLon);
-  displayPlanes.init(myLat, myLon);
+  selectedPlanes.init(parameters.myLat, parameters.myLon);
+  displayPlanes.init(parameters.myLat, parameters.myLon);
   display.init();
 
   //create a task that will be executed in the TaskDisp() function, with priority 1 and executed on core 0
@@ -143,7 +148,7 @@ void setup() {
                     "Display",     /* name of task. */
                     10000,       /* Stack size of task */
                     NULL,        /* parameter of the task */
-                    1,           /* priority of the task */
+                    configMAX_PRIORITIES,           /* priority of the task */
                     &TaskDisp,      /* Task handle to keep track of created task */
                     0);          /* pin task to core 0 */                  
   delay(500); 

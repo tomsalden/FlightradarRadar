@@ -34,6 +34,7 @@ public:
     int planeCount = 0;
     bool planeArrayFull = false;
     bool planeArrayLocked = false;
+    bool parametersUpdated = false;
 };
 
 #endif // PLANES_OBJECT_H
