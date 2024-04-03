@@ -10,7 +10,7 @@ class DisplayObject {
 public:
     // Functions for the display object
     void init();
-
+    void updateSplashScreen(String splashText);
     void updateDisplay(PlanesObject * displayPlanes, int selectedPlaneIndex, long offsetTime);
 
 private:
@@ -51,6 +51,8 @@ private:
 
     // uint32_t backgroundColour = 0x0065;
     uint32_t backgroundColour = TFT_BLACK;
+    uint32_t splashScreenColour = TFT_BLUE;
+
     uint32_t lineColour = 0xFFFF;
     uint32_t transparentColour = 0x632C;
     uint32_t headerTextColour = 0xFFE0;

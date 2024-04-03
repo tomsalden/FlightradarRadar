@@ -19,6 +19,8 @@ void DisplayObject::init() {
 
     tft.setSwapBytes(true);
 
+
+    // Initialise the sprites
     DisplayObject::background.createSprite(536,240);
     table.createSprite(536,240);
     planeCompassBase.createSprite(70,70);
@@ -32,6 +34,20 @@ void DisplayObject::init() {
 
     planeCompass.pushImage(0,0,70,70,PlaneCompass);
     planeCompass.setPivot(35,35);
+}
+
+void DisplayObject::updateSplashScreen(String splashText) {
+    // Update the splash screen
+    background.fillSprite(splashScreenColour);
+
+    // Draw the splash screen text
+    background.loadFont(Latin_Hiragana_24);
+    background.setTextColor(TFT_WHITE);
+    background.setTextDatum(4);
+    background.drawString(splashText, 268, 120);
+    background.unloadFont();
+
+    lcd_PushColors(0, 0, 536, 240, (uint16_t*)DisplayObject::background.getPointer());
 }
 
 void DisplayObject::updateDisplay(PlanesObject * displayPlanes, int selectedPlaneIndex, long offsetTime) {

@@ -22,6 +22,11 @@ DisplayObject display;
 //Setup the parameters object
 ParameterObject parameters;
 
+//Display variables
+bool splashScreen = true;
+long splashScreenTime = 0;
+String splashText = "Welcome to FlightRadarRadar! Starting up... Please wait";
+
 float locationVariable[7] = {parameters.areaMaxLat, parameters.areaMinLat, parameters.areaMaxLon, parameters.areaMinLon, parameters.myLat, parameters.myLon, parameters.myAlt};
 int selectedPlane = 0;
 
@@ -48,6 +53,11 @@ void TaskDispCode( void * pvParameters ){
 
   for(;;){
     // Serial.println("TaskDisp!");
+    if (splashScreen == true){
+      display.updateSplashScreen(splashText);
+      delay(100);
+      continue;
+    }
     if (selectedPlane >= displayPlanes.planeCount){
       selectedPlane = 0;
     }
@@ -151,6 +161,15 @@ void TaskFlightCode( void * pvParameters ){
       displayPlanes.planeArrayLocked = false;
     }
 
+    if (displayPlanes.planeCount > 0){
+      splashScreen = false;
+    }
+    else{
+      splashScreen = true;
+      splashScreenTime = millis();
+      splashText = "No planes found in the area. Please wait for more planes to appear";
+    }
+
     offsetTime = getTimeOffset(); //Update the time offset
     
 
@@ -159,6 +178,14 @@ void TaskFlightCode( void * pvParameters ){
 
 
 void setup() {
+  // Initialize display and show the splash screen
+  display.init();
+  display.updateSplashScreen(splashText);
+  splashScreen = true;
+  splashScreenTime = millis();
+
+
+  //Initialize serial communication
   Serial.begin(115200);
   Serial.println("Start");
 
@@ -169,6 +196,7 @@ void setup() {
   startNetworkConnection(parameters.ssid.c_str(), parameters.password.c_str());
   configTime(0, 0, ntpServer);
   Serial.println("Netwerk gedaan");
+  splashText = "Network connected! Retrieving flights... Please wait";
 
   //Start webserver
   setupWebServer(&parameters);
@@ -176,7 +204,6 @@ void setup() {
   //Initialize the display and the planes
   selectedPlanes.init(parameters.myLat, parameters.myLon);
   displayPlanes.init(parameters.myLat, parameters.myLon);
-  display.init();
 
   //Setup button pins
   // pinMode(button1Pin, INPUT);
