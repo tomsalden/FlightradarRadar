@@ -8,7 +8,7 @@ class PlanesObject {
 public:
     // Functions for the planes object
     void init(float myLat, float myLon);
-    void addPlaneInfo(String planeIdentifier, String planeName, String planeLat, String planeLon, String planeAltitude, String planeType, String planeRegistration, String planeHeading, String planeSpeed, String planeTimestamp);
+    void addPlaneInfo(String planeIdentifier, String planeName, String planeLat, String planeLon, String planeAltitude, String planeType, String planeRegistration, String planeHeading, String planeSpeed, String planeTimestamp, int planeIcon);
     int calculateDistance(float myLat, float myLon, float planeLat, float planeLon);
     void sortPlanes();
     void clearPlanes();
@@ -26,6 +26,7 @@ public:
     int planeSpeed[planeArraySize];
     long planeTimestamp[planeArraySize];
     int planeDistance[planeArraySize];
+    int planeIcon[planeArraySize];
     int sortedPlaneArray[planeArraySize];
 
     // Variables for calculations

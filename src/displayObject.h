@@ -12,6 +12,8 @@ public:
     void init();
     void updateSplashScreen(String splashText);
     void updateDisplay(PlanesObject * displayPlanes, int selectedPlaneIndex, long offsetTime);
+    void turnOffDisplay();
+    long splashScreenTime = 0;
 
 private:
     // Functions for the display object
@@ -36,6 +38,11 @@ private:
     double previousTime = 0;
     double timeArray[5] = {0,0,0,0,0};
     int timeArrayIndex = 0;
+
+    int splashScreenFrame = 0;
+    String periods = "";
+
+    int displayTimeout = 60000; //Time in milliseconds before the display will turn off
     
 
     // Variables for the display object

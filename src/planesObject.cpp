@@ -8,7 +8,7 @@ void PlanesObject::init(float myLat, float myLon) {
     PlanesObject::planeCount = 0;
 }
 
-void PlanesObject::addPlaneInfo(String planeIdentifier, String planeName, String planeLat, String planeLon, String planeAltitude, String planeType, String planeRegistration, String planeHeading, String planeSpeed, String planeTimestamp) {
+void PlanesObject::addPlaneInfo(String planeIdentifier, String planeName, String planeLat, String planeLon, String planeAltitude, String planeType, String planeRegistration, String planeHeading, String planeSpeed, String planeTimestamp, int planeIcon) {
     // Add plane information to the respective arrays
     int tempLength;
     // Serial.println("Addng plane info in count: " + PlanesObject::planeCount);
@@ -57,6 +57,9 @@ void PlanesObject::addPlaneInfo(String planeIdentifier, String planeName, String
 
     // Calculate the distance between the plane and the user
     PlanesObject::planeDistance[PlanesObject::planeCount] = PlanesObject::calculateDistance(PlanesObject::myLat, PlanesObject::myLon, planeLat.toFloat(), planeLon.toFloat());
+
+    // planeIcon
+    PlanesObject::planeIcon[PlanesObject::planeCount] = planeIcon;
 
     // Increase the plane count
     PlanesObject::planeCount++;

@@ -59,6 +59,7 @@ public:
 
     // Vector to store the plane models
     std::vector<String> importantPlaneModels;
+    std::vector<int> importantPlaneModelsIcons;
     int importantPlaneModelsSize = 0;
 
     // Variables for the preferences object

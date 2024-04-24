@@ -1,7 +1,9 @@
 #ifndef networkFunctions_h
 #define networkFunctions_h
 
-void startNetworkConnection(const char* ssid, const char* password);
+#include "DisplayObject.h" // Add the missing import statement for the 'DisplayObject' class
+
+void startNetworkConnection(const char* ssid, const char* password,  DisplayObject * display);
 bool networkStatus();
 unsigned long getTime();
 unsigned long getTimeOffset();

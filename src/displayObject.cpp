@@ -30,23 +30,52 @@ void DisplayObject::init() {
     planeIcon.createSprite(88,88);
     planeIcon.setSwapBytes(true);
 
-    planeIcon.pushImage(0,0,88,88,Plane6);
-
     planeCompass.pushImage(0,0,70,70,PlaneCompass);
     planeCompass.setPivot(35,35);
 }
 
 void DisplayObject::updateSplashScreen(String splashText) {
     // Update the splash screen
+
+    // If the splash screen has been on for more than displayTimeout, turn it off
+    if (millis() - splashScreenTime > displayTimeout){
+        turnOffDisplay();
+        return;
+    }
+
+    // Else, update the splash screen
     background.fillSprite(splashScreenColour);
+
+    // Add a period to the splash screen text every 10 frames and reset to 0 when 3 periods are added
+    if (splashScreenFrame % 10 == 0){
+        periods += ".";
+    }
+    if (splashScreenFrame % 40 == 0){
+        periods = "";
+    }
+    Serial.println(periods);
 
     // Draw the splash screen text
     background.loadFont(Latin_Hiragana_24);
     background.setTextColor(TFT_WHITE);
-    background.setTextDatum(4);
-    background.drawString(splashText, 268, 120);
+    background.setTextDatum(6);
+    background.drawString(splashText+periods, 5, 200);
+
+    // Show the time till the splash screen is turned off
+    background.setTextDatum(8);
+    background.drawString( String((displayTimeout - (millis() - splashScreenTime))/1000), 530, 230);
+    
     background.unloadFont();
 
+    lcd_PushColors(0, 0, 536, 240, (uint16_t*)DisplayObject::background.getPointer());
+
+    // Update the splash screen frame
+    splashScreenFrame++;
+}
+
+void DisplayObject::turnOffDisplay() {
+    // Turn off the display
+    background.fillSprite(TFT_BLACK);
     lcd_PushColors(0, 0, 536, 240, (uint16_t*)DisplayObject::background.getPointer());
 }
 
@@ -206,6 +235,30 @@ void DisplayObject::updateDisplay(PlanesObject * displayPlanes, int selectedPlan
 
     //Push the planeCompass to the base
     planeCompass.pushRotated(&planeCompassBase, planeHeading, transparentColour);
+
+    // Draw the correct plane icon
+    planeIcon.fillSprite(TFT_BLACK);
+    if (displayPlanes->planeIcon[selectedPlane] == 1){
+        planeIcon.pushImage(0,0,70,70,Plane1);
+    }
+    else if (displayPlanes->planeIcon[selectedPlane] == 2){
+        planeIcon.pushImage(0,0,88,88,Plane2);
+    }
+    else if (displayPlanes->planeIcon[selectedPlane] == 3){
+        planeIcon.pushImage(0,0,88,88,Plane3);
+    }
+    else if (displayPlanes->planeIcon[selectedPlane] == 4){
+        planeIcon.pushImage(0,0,88,88,Plane4);
+    }
+    else if (displayPlanes->planeIcon[selectedPlane] == 5){
+        planeIcon.pushImage(0,0,88,88,Plane5);
+    }
+    else if (displayPlanes->planeIcon[selectedPlane] == 6){
+        planeIcon.pushImage(0,0,88,88,Plane6);
+    }
+    else {
+        planeIcon.pushImage(0,0,70,70,Plane1);
+    }
 
     // Push sprites to background
     table.pushToSprite(&background,0,0,transparentColour);

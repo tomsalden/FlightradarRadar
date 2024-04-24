@@ -2,26 +2,34 @@
 #include <HTTPClient.h>
 #include <ESPAsyncWebServer.h>
 
+#include "displayObject.h"
 #include "parameterObject.h"
 #include "defines.h"
 #include "planesObject.h"
 
 AsyncWebServer server(80);
-// Preferences networkPreferences;
+int planeIcon = 0;
 
 // Function to start the network connection with as parameters the ssid and password
-void startNetworkConnection(const char* ssid, const char* password){
+void startNetworkConnection(const char* ssid, const char* password, DisplayObject * display){
   WiFi.begin(ssid, password);
   Serial.println("Connecting");
   int i = 0;
+  long startTime = millis();
+
   while(WiFi.status() != WL_CONNECTED) {
-    if (i > 10){
-      WiFi.reconnect();
-      i = 0;
+    if (millis() - startTime > 500){
+      if (i > 10){
+        WiFi.reconnect();
+        i = 0;
+      }
+      Serial.print(".");
+      i ++;
+      startTime = millis();
     }
-    delay(500);
-    Serial.print(".");
-    i ++;
+    if (millis() - startTime > 100){
+      display->updateSplashScreen("Welcome to FlightRadarRadar!\n Starting up");
+    }
   }
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
@@ -64,6 +72,21 @@ unsigned long getTimeOffset() {
 }
 
 bool planeFilter(String planeCallsign, String planeModel, ParameterObject * filterParameters){
+  //Filter planes based on if the model is in the importantPlaneModels array
+  //First remove the " from the planeModel start and end, then check if it is in the importantPlaneModels array
+  planeModel.remove(0,1);
+  int tempLength = planeModel.length();
+  planeModel.remove(tempLength-1,1);
+
+  // size = 13;
+
+  for (int i = 0; i < filterParameters->importantPlaneModelsSize; i++){
+    if (planeModel == filterParameters->importantPlaneModels[i]){
+      planeIcon = filterParameters->importantPlaneModelsIcons[i];
+      return true;
+    }
+  }
+  
   //Filter planes based on callsign
   //First remove the " from the planeCallsign start and end, then check if the importantCallsigns array contains a substring of the planeCallsign
   // int size = importantCallsigns[0].toInt(); //33;
@@ -75,20 +98,6 @@ bool planeFilter(String planeCallsign, String planeModel, ParameterObject * filt
     }
   }
 
-
-  //Filter planes based on if the model is in the importantPlaneModels array
-  //First remove the " from the planeModel start and end, then check if it is in the importantPlaneModels array
-  planeModel.remove(0,1);
-  int tempLength = planeModel.length();
-  planeModel.remove(tempLength-1,1);
-
-  // size = 13;
-
-  for (int i = 0; i < filterParameters->importantPlaneModelsSize; i++){
-    if (planeModel == filterParameters->importantPlaneModels[i]){
-      return true;
-    }
-  }
   return false;
 }
 
@@ -166,12 +175,13 @@ int networkRequestStream(float * locationSettings, PlanesObject * selectedPlanes
 
       // test = dataStream->readString();
       // if (planeType == "\"B763\""){
+      planeIcon = 0;
       if (planeFilter(planeName, planeType, requestParameters) == true){
         Serial.println("Identifier: " + planeIdentifier);
         if (selectedPlanes->planeArrayFull == false){
           // Serial.println("Identifier: " + planeIdentifier + "Timestamp: " + planeTimestamp + " Plane: " + planeRegistration + " Type: " + planeType + " Name: " + planeName + " Lat: " + planeLat + " Lon: " + planeLon + " Alt: " + planeAltitude + " Heading: " + planeHeading + " Speed: " + planeSpeed);
 
-          selectedPlanes->addPlaneInfo(planeIdentifier, planeName, planeLat, planeLon, planeAltitude, planeType, planeRegistration, planeHeading, planeSpeed, planeTimestamp);
+          selectedPlanes->addPlaneInfo(planeIdentifier, planeName, planeLat, planeLon, planeAltitude, planeType, planeRegistration, planeHeading, planeSpeed, planeTimestamp, planeIcon);
         }
       }
       
@@ -198,7 +208,17 @@ void setupWebServer(ParameterObject * networkPreferences){
   });
 
     server.on("/variables", HTTP_GET, [networkPreferences](AsyncWebServerRequest *request) {
-    String variablesPage = "<html><body>";
+    String variablesPage = "<script>";
+    variablesPage += "window.onload = function() {";
+    variablesPage += "  if (sessionStorage.scrollPosition) {";
+    variablesPage += "    window.scrollTo(0, sessionStorage.scrollPosition);";
+    variablesPage += "  }";
+    variablesPage += "};";
+    variablesPage += "window.onbeforeunload = function() {";
+    variablesPage += "  sessionStorage.scrollPosition = window.scrollY || document.documentElement.scrollTop;";
+    variablesPage += "};";
+    variablesPage += "</script>";
+    variablesPage += "<html><body>";
     variablesPage += "<h1>Wifi information</h1>";
     variablesPage += "<p>SSID: " + networkPreferences->getString("ssid", "") + "</p>";
     variablesPage += "<p>Password: " + networkPreferences->getString("password", "") + "</p>";
@@ -261,7 +281,7 @@ void setupWebServer(ParameterObject * networkPreferences){
 
     //Add section to add important plane models
     variablesPage += "<h1>Plane models</h1>";
-    variablesPage += "<table border='1'><tr><th>Plane model</th><th>Action</th></tr>";
+    variablesPage += "<table border='1'><tr><th>Plane model</th><th>Image</th><th>Action</th></tr>";
 
     // Retrieve the number of variables
     int numVariablesModels = networkPreferences->getInt("num_pm", 0);
@@ -270,8 +290,23 @@ void setupWebServer(ParameterObject * networkPreferences){
       // Retrieve variable value from EEPROM
       String variable = networkPreferences->getString(("pm-" + String(i)).c_str(), "");
 
-      // Display variable in a table row with remove button
+      // Display variable in a table row with a dropdown menu to choose the image number to show and a remove button
       variablesPage += "<tr><td>" + variable + "</td>";
+      // Add a dropdown menu to choose the image number to show
+      int currentValue = networkPreferences->getInt(("pm-" + String(i) + "-img").c_str(), 0); // Replace 'yourIntegerVariable' with your actual variable
+
+      variablesPage += "<td><form action='/changeimage' method='post'><input type='hidden' name='id' value='" + String(i) + "'><select name='image'>";
+
+      for (int j = 0; j <= 8; j++) {
+        variablesPage += "<option value='" + String(j) + "'";
+        if (j == currentValue) {
+          variablesPage += " selected";
+        }
+        variablesPage += ">" + String(j) + "</option>";
+      }
+
+      variablesPage += "</select><input type='submit' value='Change'></form></td>";  
+      
       variablesPage += "<td><form action='/removepm' method='post'><input type='hidden' name='id' value='" + String(i) + "'><input type='submit' value='Remove'></form></td></tr>";
     }
 
@@ -366,12 +401,17 @@ void setupWebServer(ParameterObject * networkPreferences){
 
       // Remove variable from EEPROM
       networkPreferences->remove(("pm-" + String(id)).c_str());
+      networkPreferences->remove(("pm-" + String(id) + "-img").c_str());
 
       //Reorder the variables in EEPROM to prevent gaps
       for (int i = id; i <= networkPreferences->getInt("num_pm", 0)-1; i++) {
         String variable = networkPreferences->getString(("pm-" + String(i + 1)).c_str(), "");
         networkPreferences->putString(("pm-" + String(i)).c_str(), variable);
         networkPreferences->remove(("pm-" + String(i + 1)).c_str());
+
+        int image = networkPreferences->getInt(("pm-" + String(i + 1) + "-img").c_str(), 0);
+        networkPreferences->putInt(("pm-" + String(i) + "-img").c_str(), image);
+        networkPreferences->remove(("pm-" + String(i + 1) + "-img").c_str());
       }
 
       // Update number of variables
@@ -429,6 +469,30 @@ void setupWebServer(ParameterObject * networkPreferences){
 
       // Save SSID to EEPROM
       networkPreferences->putFloat("myLon", variable.toFloat());
+    }
+
+    // Reload the parameters
+    networkPreferences->reloadParameters();
+
+    // Redirect back to variables page
+    request->redirect("/variables");
+  });
+
+  server.on("/changeimage", HTTP_POST, [networkPreferences](AsyncWebServerRequest *request) {
+    // Retrieve variable ID and image number from form data
+    if (request->hasParam("id", true)) {
+      AsyncWebParameter* p = request->getParam("id", true);
+      int id = p->value().toInt();
+
+      if (request->hasParam("image", true)) {
+        AsyncWebParameter* p = request->getParam("image", true);
+        int image = p->value().toInt();
+
+        // Save image number to EEPROM
+        networkPreferences->putInt(("pm-" + String(id) + "-img").c_str(), image);
+
+        Serial.println("Changing image for plane model " + String(id) + " to: " + String(image));
+      }
     }
 
     // Reload the parameters

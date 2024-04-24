@@ -24,8 +24,7 @@ ParameterObject parameters;
 
 //Display variables
 bool splashScreen = true;
-long splashScreenTime = 0;
-String splashText = "Welcome to FlightRadarRadar! Starting up... Please wait";
+String splashText = "Welcome to FlightRadarRadar!\n Starting up";
 
 float locationVariable[7] = {parameters.areaMaxLat, parameters.areaMinLat, parameters.areaMaxLon, parameters.areaMinLon, parameters.myLat, parameters.myLon, parameters.myAlt};
 int selectedPlane = 0;
@@ -52,7 +51,6 @@ void TaskDispCode( void * pvParameters ){
 
 
   for(;;){
-    // Serial.println("TaskDisp!");
     if (splashScreen == true){
       display.updateSplashScreen(splashText);
       delay(100);
@@ -135,6 +133,11 @@ void TaskFlightCode( void * pvParameters ){
     Serial.println("TaskFlight!");
     delay(2000);
     if (not networkStatus()){ //Check if network is still connected. Otherwise reconnect automatically
+      if (splashScreen == false){
+        splashScreen = true;
+        display.splashScreenTime = millis();
+        splashText = "Network disconnected!\n Reconnecting";
+      }
       continue;
     }
     Serial.println(getTime());
@@ -165,9 +168,11 @@ void TaskFlightCode( void * pvParameters ){
       splashScreen = false;
     }
     else{
-      splashScreen = true;
-      splashScreenTime = millis();
-      splashText = "No planes found in the area. Please wait for more planes to appear";
+      if (splashScreen == false){
+        splashScreen = true;
+        display.splashScreenTime = millis();
+        splashText = "No planes found in the area.\n Searching planes";
+      }
     }
 
     offsetTime = getTimeOffset(); //Update the time offset
@@ -182,7 +187,7 @@ void setup() {
   display.init();
   display.updateSplashScreen(splashText);
   splashScreen = true;
-  splashScreenTime = millis();
+  display.splashScreenTime = millis();
 
 
   //Initialize serial communication
@@ -193,10 +198,10 @@ void setup() {
 
   parameters.init(); //Initialize the parameters object
 
-  startNetworkConnection(parameters.ssid.c_str(), parameters.password.c_str());
+  startNetworkConnection(parameters.ssid.c_str(), parameters.password.c_str(), &display);
   configTime(0, 0, ntpServer);
   Serial.println("Netwerk gedaan");
-  splashText = "Network connected! Retrieving flights... Please wait";
+  splashText = "Network connected!\n Retrieving flights";
 
   //Start webserver
   setupWebServer(&parameters);

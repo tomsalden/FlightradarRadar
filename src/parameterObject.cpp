@@ -23,8 +23,10 @@ void ParameterObject::init() {
     // Load the plane models
     importantPlaneModelsSize = preferences.getInt("num_pm", 0);
     importantPlaneModels.resize(importantPlaneModelsSize);
+    importantPlaneModelsIcons.resize(importantPlaneModelsSize);
     for (int i = 0; i < importantPlaneModelsSize; i++){
         importantPlaneModels[i] = preferences.getString(("pm-" + String(i+1)).c_str(), "");
+        importantPlaneModelsIcons[i] = preferences.getInt(("pm-" + String(i+1) + "-img").c_str(), 0);
     }
 }
 
@@ -40,8 +42,10 @@ void ParameterObject::reloadParameters() {
     // Load the plane models
     importantPlaneModelsSize = preferences.getInt("num_pm", 0);
     importantPlaneModels.resize(importantPlaneModelsSize);
+    importantPlaneModelsIcons.resize(importantPlaneModelsSize);
     for (int i = 0; i < importantPlaneModelsSize; i++){
         importantPlaneModels[i] = preferences.getString(("pm-" + String(i+1)).c_str(), "");
+        importantPlaneModelsIcons[i] = preferences.getInt(("pm-" + String(i+1) + "-img").c_str(), 0);
     }
     loadParameters();
 }
