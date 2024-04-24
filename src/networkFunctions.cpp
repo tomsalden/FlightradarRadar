@@ -34,6 +34,8 @@ void startNetworkConnection(const char* ssid, const char* password, DisplayObjec
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
+  display->ipAddress = WiFi.localIP().toString();
+  display->SSID = WiFi.SSID();
 }
 
 // Function to check the network status. If it is not connected, retry the connection by using reconnect

@@ -36,7 +36,7 @@ int lastButtonState1 = HIGH; // the previous reading from the input pin
 int lastButtonState2 = HIGH; // the previous reading from the input pin
 unsigned long lastDebounceTime1 = 0; // the last time the output pin was toggled
 unsigned long lastDebounceTime2 = 0; // the last time the output pin was toggled
-unsigned long debounceDelay = 50; // the debounce time; increase if the output flickers
+unsigned long debounceDelay = 200; // the debounce time; increase if the output flickers
 
 const char* ntpServer = "pool.ntp.org";
 long offsetTime = 0; //Variable to keep track of millisecond time

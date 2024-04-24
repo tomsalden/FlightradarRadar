@@ -8,6 +8,8 @@
 #include "plane4.h"
 #include "plane5.h"
 #include "plane6.h"
+#include "FlightradarRadar400.h"
+#include "logoNeedle400.h"
 
 // Functions for the display object
 void DisplayObject::init() {
@@ -32,6 +34,17 @@ void DisplayObject::init() {
 
     planeCompass.pushImage(0,0,70,70,PlaneCompass);
     planeCompass.setPivot(35,35);
+
+    splashScreenLogo.createSprite(400,72);
+    splashScreenLogo.fillSprite(0xFFFF);
+    splashScreenLogo.pushImage(0,0,400,72,FlightradarRadar400);
+
+
+    splashScreenNeedle.createSprite(18,61);
+    splashScreenNeedle.fillSprite(0xFFFF);
+    splashScreenNeedle.pushImage(0,0,18,61,logoNeedle400);
+
+    splashScreenNeedleHolder.createSprite(70,70);
 }
 
 void DisplayObject::updateSplashScreen(String splashText) {
@@ -45,6 +58,7 @@ void DisplayObject::updateSplashScreen(String splashText) {
 
     // Else, update the splash screen
     background.fillSprite(splashScreenColour);
+    splashScreenNeedleHolder.fillSprite(0xFFFF);
 
     // Add a period to the splash screen text every 10 frames and reset to 0 when 3 periods are added
     if (splashScreenFrame % 10 == 0){
@@ -66,6 +80,14 @@ void DisplayObject::updateSplashScreen(String splashText) {
     background.drawString( String((displayTimeout - (millis() - splashScreenTime))/1000), 530, 230);
     
     background.unloadFont();
+
+    // Push the splash screen logo
+    splashScreenLogo.pushToSprite(&background, 68, 84, 0xFFFF);
+
+    // Draw the splash screen needle and rotate it
+    int angle = int(int(splashScreenFrame * 1.5) % 360);
+    splashScreenNeedle.pushRotated(&splashScreenNeedleHolder, angle, 0xFFFF);
+    splashScreenNeedleHolder.pushToSprite(&background, 65, 82, 0xFFFF);
 
     lcd_PushColors(0, 0, 536, 240, (uint16_t*)DisplayObject::background.getPointer());
 
@@ -179,7 +201,10 @@ void DisplayObject::updateDisplay(PlanesObject * displayPlanes, int selectedPlan
     table.drawString(String(displayPlanes->planeAltitude[selectedPlane]), 86, 137);
     table.drawString("Spd: ", 13, 174);
     table.drawString(String(displayPlanes->planeSpeed[selectedPlane]), 86, 174);
-    table.drawString(displayPlanes->planeName[selectedPlane], 12, 212);
+
+    // Print SSID and IP address in the same line
+
+    table.drawString(SSID + ", IP: " + ipAddress, 12, 212);
 
     // Text column 2
     table.drawString("Dist: ", 270, 68);

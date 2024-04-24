@@ -14,6 +14,8 @@ public:
     void updateDisplay(PlanesObject * displayPlanes, int selectedPlaneIndex, long offsetTime);
     void turnOffDisplay();
     long splashScreenTime = 0;
+    String ipAddress = "0.0.0.0";
+    String SSID = "SSID";
 
 private:
     // Functions for the display object
@@ -55,10 +57,13 @@ private:
     TFT_eSprite radar = TFT_eSprite(&tft);
     TFT_eSprite radarStripe = TFT_eSprite(&tft);
     TFT_eSprite planeIcon = TFT_eSprite(&tft);
+    TFT_eSprite splashScreenLogo = TFT_eSprite(&tft);
+    TFT_eSprite splashScreenNeedle = TFT_eSprite(&tft);
+    TFT_eSprite splashScreenNeedleHolder = TFT_eSprite(&tft);
 
     // uint32_t backgroundColour = 0x0065;
     uint32_t backgroundColour = TFT_BLACK;
-    uint32_t splashScreenColour = TFT_BLUE;
+    uint32_t splashScreenColour = 0x0253;
 
     uint32_t lineColour = 0xFFFF;
     uint32_t transparentColour = 0x632C;
