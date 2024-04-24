@@ -36,6 +36,7 @@ void DisplayObject::init() {
     planeCompass.setPivot(35,35);
 
     splashScreenLogo.createSprite(400,72);
+    splashScreenLogo.setSwapBytes(true);
     splashScreenLogo.fillSprite(0xFFFF);
     splashScreenLogo.pushImage(0,0,400,72,FlightradarRadar400);
 
